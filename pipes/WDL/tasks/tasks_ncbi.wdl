@@ -5,6 +5,7 @@ task download_fasta {
     String         out_prefix
     Array[String]+ accessions
     String         emailAddress
+    String?        api_key
 
     String         docker = "quay.io/broadinstitute/viral-phylo:2.3.6.0"
   }
@@ -16,6 +17,7 @@ task download_fasta {
         . \
         ${sep=' ' accessions} \
         --combinedFilePrefix ${out_prefix} \
+        ${if defined(api_key) then "--api_key " + api_key else ""}
   }
 
   output {
@@ -37,6 +39,7 @@ task download_annotations {
     Array[String]+ accessions
     String         emailAddress
     String         combined_out_prefix
+    String?        api_key
 
     String         docker = "quay.io/broadinstitute/viral-phylo:2.3.6.0"
   }
@@ -48,7 +51,8 @@ task download_annotations {
         ~{emailAddress} \
         ./ \
         ~{sep=' ' accessions} \
-        --loglevel DEBUG
+        --loglevel DEBUG \
+        ${if defined(api_key) then "--api_key " + api_key else ""}
     mkdir -p combined
     ncbi.py fetch_fastas \
         ~{emailAddress} \
@@ -56,7 +60,8 @@ task download_annotations {
         ~{sep=' ' accessions} \
         --combinedFilePrefix "combined/~{combined_out_prefix}" \
         --forceOverwrite \
-        --loglevel DEBUG
+        --loglevel DEBUG \
+        ${if defined(api_key) then "--api_key " + api_key else ""}
   >>>
 
   output {
@@ -84,6 +89,7 @@ task annot_transfer {
     File         multi_aln_fasta
     File         reference_fasta
     Array[File]+ reference_feature_table
+    String?      api_key
 
     String       docker = "quay.io/broadinstitute/viral-phylo:2.3.6.0"
   }
@@ -112,7 +118,8 @@ task annot_transfer {
         ${sep=' ' reference_feature_table} \
         . \
         --oob_clip \
-        --loglevel DEBUG
+        --loglevel DEBUG \
+        ${if defined(api_key) then "--api_key " + api_key else ""}
   }
 
   output {
@@ -138,6 +145,7 @@ task align_and_annot_transfer_single {
     File         genome_fasta
     Array[File]+ reference_fastas
     Array[File]+ reference_feature_tables
+    String?      api_key
 
     String       docker = "quay.io/broadinstitute/viral-phylo:2.3.6.0"
   }
@@ -167,7 +175,8 @@ task align_and_annot_transfer_single {
         --ref_fastas ${sep=' ' reference_fastas} \
         --ref_tbls ${sep=' ' reference_feature_tables} \
         --oob_clip \
-        --loglevel DEBUG
+        --loglevel DEBUG \
+        ${if defined(api_key) then "--api_key " + api_key else ""}
   }
 
   output {
@@ -482,7 +491,7 @@ task sra_meta_prep {
       # filename must be <libraryname>.<flowcell>.<lane>.cleaned.bam or <libraryname>.<flowcell>.<lane>.bam
       bam_base = os.path.basename(bam)
       bam_parts = bam_base.split('.')
-      assert bam_parts[-1] == 'bam', "filename does not end in .bam -- {}".format(bam) 
+      assert bam_parts[-1] == 'bam', "filename does not end in .bam -- {}".format(bam)
       bam_parts = bam_parts[:-1]
       if bam_parts[-1] == 'cleaned':
         bam_parts = bam_parts[:-1]
@@ -649,10 +658,10 @@ task biosample_to_genbank {
     File    biosample_attributes
     Int     num_segments = 1
     Int     taxid
-
     File?   filter_to_ids
-
     Boolean s_dropout_note = true
+    String? api_key
+
     String  docker = "quay.io/broadinstitute/viral-phylo:2.3.6.0"
   }
   String base = basename(biosample_attributes, ".txt")
@@ -669,7 +678,8 @@ task biosample_to_genbank {
         --biosample_in_smt \
         --iso_dates \
         ~{true="--sgtf_override" false="" s_dropout_note} \
-        --loglevel DEBUG
+        --loglevel DEBUG \
+        ${if defined(api_key) then "--api_key " + api_key else ""}
     cut -f 1 "${base}.genbank.src" | tail +2 > "${base}.sample_ids.txt"
   }
   output {
@@ -715,7 +725,7 @@ task generate_author_sbt_file {
       description: "prefix to use for the generated *.sbt output file"
     }
   }
-  
+
   command <<<
     set -e
 
@@ -755,7 +765,7 @@ task generate_author_sbt_file {
                     title         = defaults_data.get("title")
                     citation      = defaults_data.get("citation")
                     authors_affil = defaults_data.get("authors_affil")
-                    
+
                     defaults_data_authors = defaults_data.get("authors_start",[])
                     for author in defaults_data_authors:
                         authors.extend(author)
@@ -763,7 +773,7 @@ task generate_author_sbt_file {
                     defaults_data_last_authors = defaults_data.get("authors_last",[])
                     for author in defaults_data_last_authors:
                         last_authors.append(author)
-        
+
         for author_match in author_re.finditer(author_string):
             author = {}
             lastname=author_match.group("lastname")
@@ -782,7 +792,7 @@ task generate_author_sbt_file {
             author["first"]    = first
             author["initials"]   = ".".join(initials[1:]) if not author_match.group("first") else ".".join(initials)
             author["initials"]   = author["initials"]+"." if len(author["initials"])>0 else author["initials"]
-            
+
             if author not in authors: # could use less exact match
                 authors.append(author)
 
@@ -806,9 +816,9 @@ task generate_author_sbt_file {
             with open(j2_template) as sbt_template:
                 template = Template(sbt_template.read())
 
-            rendered = template.render( authors=authors, 
+            rendered = template.render( authors=authors,
                                         **jinja_rendering_kwargs)
-        
+
             #print(rendered)
             with open(sbt_out_path,"w") as sbt_out:
                 sbt_out.write(rendered)
