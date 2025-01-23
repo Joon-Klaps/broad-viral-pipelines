@@ -70,7 +70,7 @@ easy-deploy-virtualized/data/viral-ngs/
 tools/build/
 tools/conda-cache/
 tools/conda-tools/
-
+_LAST
 *.snakemake/
 
 .pytest_cache/

@@ -17,7 +17,7 @@ task download_fasta {
         . \
         ${sep=' ' accessions} \
         --combinedFilePrefix ${out_prefix} \
-        ${if defined(api_key) then "--api_key " + api_key else ""}
+        ~{if defined(api_key) then "--api_key " + api_key else ""}
   }
 
   output {
@@ -52,7 +52,7 @@ task download_annotations {
         ./ \
         ~{sep=' ' accessions} \
         --loglevel DEBUG \
-        ${if defined(api_key) then "--api_key " + api_key else ""}
+        ~{if defined(api_key) then "--api_key " + api_key else ""}
     mkdir -p combined
     ncbi.py fetch_fastas \
         ~{emailAddress} \
@@ -61,7 +61,7 @@ task download_annotations {
         --combinedFilePrefix "combined/~{combined_out_prefix}" \
         --forceOverwrite \
         --loglevel DEBUG \
-        ${if defined(api_key) then "--api_key " + api_key else ""}
+        ~{if defined(api_key) then "--api_key " + api_key else ""}
   >>>
 
   output {
@@ -119,7 +119,7 @@ task annot_transfer {
         . \
         --oob_clip \
         --loglevel DEBUG \
-        ${if defined(api_key) then "--api_key " + api_key else ""}
+        ~{if defined(api_key) then "--api_key " + api_key else ""}
   }
 
   output {
@@ -176,7 +176,7 @@ task align_and_annot_transfer_single {
         --ref_tbls ${sep=' ' reference_feature_tables} \
         --oob_clip \
         --loglevel DEBUG \
-        ${if defined(api_key) then "--api_key " + api_key else ""}
+        ~{if defined(api_key) then "--api_key " + api_key else ""}
   }
 
   output {
@@ -679,7 +679,7 @@ task biosample_to_genbank {
         --iso_dates \
         ~{true="--sgtf_override" false="" s_dropout_note} \
         --loglevel DEBUG \
-        ${if defined(api_key) then "--api_key " + api_key else ""}
+        ~{if defined(api_key) then "--api_key " + api_key else ""}
     cut -f 1 "${base}.genbank.src" | tail +2 > "${base}.sample_ids.txt"
   }
   output {

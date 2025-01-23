@@ -39,7 +39,7 @@ workflow scaffold_and_refine_multitaxa {
         call ncbi.download_annotations {
             input:
                 accessions = string_split.tokens,
-                combined_out_prefix = taxon[2]
+                combined_out_prefix = sub(taxon[2], ":", "-")
         }
     }
 
